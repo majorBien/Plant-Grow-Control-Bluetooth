@@ -1,30 +1,62 @@
-#include <FastLED.h>
-#include <DHT.h>
-#include <Wire.h>
-#include "Adafruit_SGP40.h"
-#include <LiquidCrystal_I2C.h>
-
-
-Adafruit_SGP40 sgp;
-
-#define num_of_leds 60 //number of leds
-#define pin_leds 5 // data pin for led strip
-#define Type DHT22
-#define pin_soil A1  // data pin for soil sensor
-#define button1_pin 11 //main windows navigation ZMIANA
-#define relay_pin 7 // realy data pin ZMIANA
-#define relay_pin2 8 // chose button ZMIANA
-#define relay_pin3 9 // right navigation ZMIANA
-#define relay_pin4 10 // realy data pin ZMIANA
-
+int sensorPin = A1;
+int sensorValue = 0;
+int value1;
+unsigned long aktualnyCzas = 0;
+unsigned long zapamietanyCzas = 0;
+unsigned long licznik = 0;
 unsigned long dzien = 43200;
 unsigned long  noc = 43200;
+int wybrany_cykl;
 boolean  znacznik=0;
+char wartosc_odbierana;
+float temperatura;
+ int wilgotnosc;
 int e=-1;
 int f=-1;
 int g=-1;
 int h=-1;
 int mode = 0;
+
+void setup()
+{
+ 
+  Serial.begin(9600);
+
+  pinMode(7,OUTPUT);
+  pinMode(8,OUTPUT);
+  pinMode(9,OUTPUT);
+  pinMode(10,OUTPUT);
+  digitalWrite(7,LOW);
+  digitalWrite(8,HIGH);
+  digitalWrite(9,HIGH);
+  digitalWrite(10,HIGH);
+}
+
+void loop()
+{
+  odbieranie_danych();
+  odliczanie_czasu();
+  sterowanie_przekaznikami();
+  pomiar_temperatury();
+  pomiar_wilgotnosci_gelby();
+  delay(1000);
+}
+
+
+
+void odliczanie_czasu()
+{
+ aktualnyCzas = millis();
+ 
+
+  if (aktualnyCzas - zapamietanyCzas >= 1000UL)
+  {
+
+    zapamietanyCzas = aktualnyCzas;
+    licznik++;
+  }
+
+}
 void odbieranie_danych()
 {
   if(Serial.available()>0)
@@ -81,7 +113,6 @@ void odbieranie_danych()
  
 }
 
-
 void sterowanie_przekaznikami()
 {
 
@@ -89,6 +120,7 @@ void sterowanie_przekaznikami()
   {
  
     digitalWrite(7,HIGH);
+    digitalWrite(8,LOW);
 
     licznik = 0;
     znacznik = 1;
@@ -100,6 +132,7 @@ void sterowanie_przekaznikami()
   {
  
     digitalWrite(7,LOW);
+    digitalWrite(8,HIGH);
 
     licznik = 0;
     znacznik = 0;
@@ -172,3 +205,38 @@ void sterowanie_przekaznikami()
    
   }  
 }
+
+
+  void pomiar_temperatury()
+  {
+    float zapis;
+    int odczyt = analogRead(temperatura_adc);
+    float napiecie = odczyt * (5000 / 1024);
+    temperatura = napiecie / 10;
+    if(temperatura>17&&temperatura<26)
+    {
+      zapis = temperatura;
+    }
+    if(temperatura<17||temperatura>26)
+    {
+      temperatura=zapis;
+    }  
+    Serial.print(temperatura);
+    Serial.print(" \xC2\xB0");
+    Serial.print("/");
+   
+   
+ 
+  }
+
+
+  void pomiar_wilgotnosci_gelby()
+  {
+sensorValue = analogRead(sensorPin);
+value1 = map(sensorValue, 0, 1023, 100, 0);
+Serial.print(value1);
+    Serial.print("%");
+    Serial.print("/");
+   
+   
+  }
